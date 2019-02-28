@@ -41,7 +41,6 @@ class Keypoints(object):
         if method not in (FLIP_LEFT_RIGHT,):
             raise NotImplementedError(
                     "Only FLIP_LEFT_RIGHT implemented")
-
         flip_inds = type(self).FLIP_INDS
         flipped_data = self.keypoints[:, flip_inds]
         width = self.size[0]
@@ -96,6 +95,33 @@ def _create_flip_indices(names, flip_map):
 
 class PersonKeypoints(Keypoints):
     NAMES = [
+        'Right_Front_wheel',
+	'Left_Front_wheel',
+	'Right_Back_wheel',
+	'Left_Back_wheel',
+	'Right_Front_HeadLight',
+	'Left_Front_HeadLight',
+	'Right_Back_HeadLight',
+	'Left_Back_HeadLight',
+	'Exhaust',
+	'Right_Front_Top',
+	'Left_Front_Top',
+	'Right_Back_Top',
+	'Left_Back_Top',
+        'Center'
+    ]
+    FLIP_MAP = {
+        'Right_Front_wheel': 'Left_Front_wheel',
+	'Right_Back_wheel': 'Left_Back_wheel',
+	'Right_Front_HeadLight': 'Left_Front_HeadLight',
+	'Right_Back_HeadLight': 'Left_Back_HeadLight',
+	'Right_Front_Top': 'Left_Front_Top',
+	'Right_Back_Top': 'Left_Back_Top'
+    }
+
+
+class PersonKeypointsBack(Keypoints):
+    NAMES = [
         'nose',
         'left_eye',
         'right_eye',
@@ -129,6 +155,27 @@ class PersonKeypoints(Keypoints):
 # TODO this doesn't look great
 PersonKeypoints.FLIP_INDS = _create_flip_indices(PersonKeypoints.NAMES, PersonKeypoints.FLIP_MAP)
 def kp_connections(keypoints):
+    kp_lines = [[0, 2],
+                [1, 3],
+                [0, 1],
+                [2, 3],
+                [9, 11],
+                [10, 12],
+                [9, 10],
+                [11, 12],
+                [4, 0],
+                [4, 9],
+                [4, 5],
+                [5, 1],
+                [5, 10],
+                [6, 2],
+                [6, 11],
+                [7, 3],
+                [7, 12],
+                [6, 7]
+    ]
+    return kp_lines
+def kp_connections_back(keypoints):
     kp_lines = [
         [keypoints.index('left_eye'), keypoints.index('right_eye')],
         [keypoints.index('left_eye'), keypoints.index('nose')],

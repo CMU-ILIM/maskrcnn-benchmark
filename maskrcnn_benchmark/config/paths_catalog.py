@@ -103,7 +103,15 @@ class DatasetCatalog(object):
         "cityscapes_fine_instanceonly_seg_test_cocostyle": {
             "img_dir": "cityscapes/images",
             "ann_file": "cityscapes/annotations/instancesonly_filtered_gtFine_test.json"
-        }
+        },
+        "keypoints_carfusion_train_cocostyle": {
+            "img_dir": "carfusion/train",
+            "ann_file": "carfusion/annotations/car_keypoints_train.json",
+        },
+        "keypoints_carfusion_val_cocostyle": {
+            "img_dir": "carfusion/val",
+            "ann_file": "carfusion/annotations/car_keypoints_val.json"
+        },
     }
 
     @staticmethod
