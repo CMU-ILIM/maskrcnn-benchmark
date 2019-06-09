@@ -260,7 +260,7 @@ class BoxList(object):
         Arguments: roi Polygon
         """
         is_in = [False]*len(self.bbox)
-        roi_poly = roi.polygons[0].polygons
+        roi_poly = roi.instances[0].polygons
         # print(roi_poly)
         # print(self.size)
         # roi_poly[:, 0] *= self.size[0]

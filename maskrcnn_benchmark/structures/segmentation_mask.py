@@ -462,7 +462,8 @@ class PolygonList(object):
                 item = item.squeeze(1) if item.numel() > 0 else item
                 item = item.tolist()
             for i in item:
-                selected_polygons.append(self.polygons[i])
+                if i < len(self.polygons):
+                    selected_polygons.append(self.polygons[i])
         return PolygonList(selected_polygons, size=self.size)
 
     def __iter__(self):
