@@ -9,6 +9,7 @@ import torch.distributed as dist
 from maskrcnn_benchmark.utils.comm import get_world_size
 from maskrcnn_benchmark.utils.metric_logger import MetricLogger
 
+from tensorboardX import SummaryWriter
 
 def reduce_loss_dict(loss_dict):
     """
@@ -47,6 +48,9 @@ def do_train(
 ):
     logger = logging.getLogger("maskrcnn_benchmark.trainer")
     logger.info("Start training")
+
+    writer = SummaryWriter()
+
     meters = MetricLogger(delimiter="  ")
     max_iter = len(data_loader)
     start_iter = arguments["iteration"]
@@ -101,6 +105,10 @@ def do_train(
                     memory=torch.cuda.max_memory_allocated() / 1024.0 / 1024.0,
                 )
             )
+            writer.add_scalar('train/classifier_loss', meters.meters['loss_classifier'].median, iteration)
+            writer.add_scalar('train/box_reg_loss', meters.meters['loss_box_reg'].median, iteration)
+            writer.add_scalar('train/objectness_loss', meters.meters['loss_objectness'].median, iteration)
+            writer.add_scalar('train/rpn_box_reg', meters.meters['loss_rpn_box_reg'].median, iteration)
         if iteration % checkpoint_period == 0:
             checkpointer.save("model_{:07d}".format(iteration), **arguments)
         if iteration == max_iter:

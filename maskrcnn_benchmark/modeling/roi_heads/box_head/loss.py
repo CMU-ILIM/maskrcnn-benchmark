@@ -53,6 +53,30 @@ class FastRCNNLossComputation(object):
         labels = []
         regression_targets = []
         for proposals_per_image, targets_per_image in zip(proposals, targets):
+            import numpy as np
+            imid = targets_per_image.get_field("image_id")[0]
+            
+            np.save('npy/proposals_{}.npy'.format(imid), proposals_per_image.bbox.cpu().data.numpy())
+            if targets_per_image.has_field("labeling_roi"):
+                rois = targets_per_image.get_field("labeling_roi")
+
+                #print("proposal num:", len(proposals_per_image))
+                #print(targets_per_image.get_field("image_id"))   
+                #print(proposals_per_image.bbox)
+                #print(rois.polygons[0].polygons)
+                #roi_save = np.array([p.cpu().data.numpy() for p in rois.polygons[0].polygons])
+                #np.save('npy/roi_{}.npy'.format(imid), roi_save)
+
+                in_rois_idxs = proposals_per_image.is_in_roi(rois)
+                #print(in_rois_idxs)
+
+                proposals_per_image = proposals_per_image[in_rois_idxs]
+
+                #np.save('npy/filtered_proposals_{}.npy'.format(imid), proposals_per_image.bbox.cpu().data.numpy())
+                #np.save('npy/targets_{}.npy'.format(imid), targets_per_image.bbox.cpu().data.numpy())
+                #print("filtered proposal num:", len(proposals_per_image))
+                #print("image_size", proposals_per_image.size)
+
             matched_targets = self.match_targets_to_proposals(
                 proposals_per_image, targets_per_image
             )

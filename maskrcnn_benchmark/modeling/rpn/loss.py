@@ -127,6 +127,8 @@ class RPNLossComputation(object):
         objectness_loss = F.binary_cross_entropy_with_logits(
             objectness[sampled_inds], labels[sampled_inds]
         )
+        #print('positive', objectness[sampled_pos_inds], objectness[sampled_pos_inds].mean())
+        #print('negative', objectness[sampled_neg_inds], objectness[sampled_neg_inds].mean())
 
         return objectness_loss, box_loss
 

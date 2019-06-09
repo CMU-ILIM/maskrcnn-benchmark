@@ -3,6 +3,9 @@ import torch
 
 import pycocotools.mask as mask_utils
 
+import matplotlib.path as mplPath
+import numpy as np
+
 # transpose
 FLIP_LEFT_RIGHT = 0
 FLIP_TOP_BOTTOM = 1
@@ -142,7 +145,6 @@ class Polygons(object):
         s += "mode={})".format(self.mode)
         return s
 
-
 class SegmentationMask(object):
     """
     This class stores the segmentations for all objects in the image
@@ -212,3 +214,14 @@ class SegmentationMask(object):
         s += "image_width={}, ".format(self.size[0])
         s += "image_height={})".format(self.size[1])
         return s
+
+    def point_inside(self, point):
+        h = self.size[1]
+        is_in = np.array( [False] * len(self.polygons) )
+        for i, poly in enumerate(self.polygons):
+            poly = poly.polygons[0].data.numpy() 
+            converted = [[a[0], h - a[1]] for a in poly]
+            bbPath = mplPath.Path(np.array(converted))
+            is_in[i] = bbPath.contains_point((point[0], h-point[1]))
+        return is_in.any()
+
