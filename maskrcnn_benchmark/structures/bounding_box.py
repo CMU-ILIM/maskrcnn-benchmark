@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import torch
+from shapely.geometry import Polygon
 
 # transpose
 FLIP_LEFT_RIGHT = 0
@@ -25,7 +26,7 @@ class BoxList(object):
             )
         if bbox.size(-1) != 4:
             raise ValueError(
-                "last dimenion of bbox should have a "
+                "last dimension of bbox should have a "
                 "size of 4, got {}".format(bbox.size(-1))
             )
         if mode not in ("xyxy", "xywh"):
@@ -254,6 +255,40 @@ class BoxList(object):
         s += "mode={})".format(self.mode)
         return s
 
+    def is_in_roi(self, roi):
+        """
+        Arguments: roi Polygon
+        """
+        is_in = [False]*len(self.bbox)
+        roi_poly = roi.polygons[0].polygons
+        # print(roi_poly)
+        # print(self.size)
+        # roi_poly[:, 0] *= self.size[0]
+        # roi_poly[:, 1] *= self.size[1]
+        # print(roi_poly)
+        # import numpy as np
+        # np.save('roi_resize.npy', roi_poly.cpu().data.numpy()) 
+        roi_poly = Polygon([tuple(p) for p in roi_poly])
+
+        box = self.bbox
+        if self.mode == "xyxy":
+            TO_REMOVE = 1
+            bw, bh = box[:, 2]-box[:, 0]+TO_REMOVE, box[:, 3]-box[:, 1]+TO_REMOVE
+        elif self.mode == "xywh":
+            bw, bh = box[:, 2], box[:, 3]
+        # get a smaller bounding box to check whether the smaller one is in the roi
+        offset_w, offset_h = bw*0.2, bh*0.2
+        inner_box = [box[:, 0]+offset_w, box[:, 1]+offset_h, 
+                     box[:, 0]+bw-offset_w, box[:, 1]+bh-offset_h]
+        for i, box in enumerate(self.bbox):
+            box_pt = [(inner_box[0][i], inner_box[1][i]),
+                      (inner_box[0][i], inner_box[3][i]),
+                      (inner_box[2][i], inner_box[3][i]),
+                      (inner_box[2][i], inner_box[1][i])]
+            box_poly = Polygon(box_pt)
+            is_in[i] = roi_poly.intersects(box_poly) 
+        return torch.Tensor(is_in)==True
+
 
 if __name__ == "__main__":
     bbox = BoxList([[0, 0, 10, 10], [0, 0, 5, 5]], (10, 10))
@@ -264,3 +299,8 @@ if __name__ == "__main__":
     t_bbox = bbox.transpose(0)
     print(t_bbox)
     print(t_bbox.bbox)
+
+    new_bbox = bbox.bbox[[True, False]]
+    print(type(bbox.bbox))
+    print(new_bbox)
+    print(len(new_bbox))

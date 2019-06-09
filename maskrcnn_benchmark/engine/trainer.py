@@ -9,6 +9,8 @@ import torch.distributed as dist
 from maskrcnn_benchmark.utils.comm import get_world_size
 from maskrcnn_benchmark.utils.metric_logger import MetricLogger
 
+from tensorboardX import SummaryWriter
+from apex import amp
 
 def reduce_loss_dict(loss_dict):
     """
@@ -47,6 +49,9 @@ def do_train(
 ):
     logger = logging.getLogger("maskrcnn_benchmark.trainer")
     logger.info("Start training")
+
+    writer = SummaryWriter()
+
     meters = MetricLogger(delimiter="  ")
     max_iter = len(data_loader)
     start_iter = arguments["iteration"]
@@ -54,6 +59,10 @@ def do_train(
     start_training_time = time.time()
     end = time.time()
     for iteration, (images, targets, _) in enumerate(data_loader, start_iter):
+        
+        if any(len(target) < 1 for target in targets):
+            logger.error(f"Iteration={iteration + 1} || Image Ids used for training {_} || targets Length={[len(target) for target in targets]}" )
+            continue
         data_time = time.time() - end
         iteration = iteration + 1
         arguments["iteration"] = iteration
@@ -73,7 +82,10 @@ def do_train(
         meters.update(loss=losses_reduced, **loss_dict_reduced)
 
         optimizer.zero_grad()
-        losses.backward()
+        # Note: If mixed precision is not used, this ends up doing nothing
+        # Otherwise apply loss scaling for mixed-precision recipe
+        with amp.scale_loss(losses, optimizer) as scaled_losses:
+            scaled_losses.backward()
         optimizer.step()
 
         batch_time = time.time() - end
@@ -101,6 +113,10 @@ def do_train(
                     memory=torch.cuda.max_memory_allocated() / 1024.0 / 1024.0,
                 )
             )
+            writer.add_scalar('train/classifier_loss', meters.meters['loss_classifier'].median, iteration)
+            writer.add_scalar('train/box_reg_loss', meters.meters['loss_box_reg'].median, iteration)
+            writer.add_scalar('train/objectness_loss', meters.meters['loss_objectness'].median, iteration)
+            writer.add_scalar('train/rpn_box_reg', meters.meters['loss_rpn_box_reg'].median, iteration)
         if iteration % checkpoint_period == 0:
             checkpointer.save("model_{:07d}".format(iteration), **arguments)
         if iteration == max_iter:
